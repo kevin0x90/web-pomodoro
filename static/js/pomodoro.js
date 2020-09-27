@@ -23,9 +23,19 @@ title.setText = function (text) {
   title.textContent = text;
 };
 
+numOfPomodoro.setText = function (text) {
+  this.textContent = text;
+};
+numOfPomodoro.getText = function () {
+  return this.textContent;
+};
+
 timer.title = title;
 timer.isReset = false;
 timer.isPause = false;
+timer.setText = function (text) {
+  this.textContent = text;
+};
 timer.update = function (minute, second, type) {
   var time = checkTime(minute) + ":" + checkTime(second);
   this.textContent = time;
@@ -36,56 +46,69 @@ timer.update = function (minute, second, type) {
   }
 };
 
-mainButton.changeText = function (text) {
+mainButton.setText = function (text) {
   this.textContent = text;
 };
 
-function breakDoneListener (e) {
-    breakCount++;
-}
+pauseButton.setText = function (text) {
+  this.textContent = text;
+};
 
 timer.addEventListener('pomodoroDone', updatePomodoroCount);
 timer.addEventListener('breakDone', breakDoneListener);
 
+function updatePomodoroCount() {
+  ++pomodoroCount;
+  numOfPomodoro.setText(numOfPomodoro.getText() + "X ")
+}
+
+function breakDoneListener (e) {
+  ++breakCount;
+}
+
 function startTheDay() {
-    if (timer.isReset) {
-      clearInterval(interval);
-      updateTimer(25, 0, types.POMODORO);
-      mainButton.changeText("Start your Pomorodo!");
-      timer.isReset = false;
-      //When the user resets we pause the timer
-      timer.isPause = true;
-    } else {
-      mainButton.changeText("Reset");
-      timer.isReset = true;
-      startPomodoro();
-      timer.isPause = false;
-    }
-    updatePauseButton();
+  if (timer.isReset) {
+    clearInterval(interval);
+    updateTimer(25, 0, types.POMODORO);
+    mainButton.setText("Start your Pomorodo!");
+    timer.isReset = false;
+    //When the user resets we pause the timer
+    timer.isPause = true;
+  } else {
+    mainButton.setText("Reset");
+    timer.isReset = true;
+    startPomodoro();
+    timer.isPause = false;
+  }
+  updatePauseButton();
 }
 
 function updateTimer(minute, second, type) {
-  var time = checkTime(minute) + ":" + checkTime(second);
-  timer.textContent = time;
+  var
+    time = checkTime(minute) + ":" + checkTime(second);
+
+  timer.setText(time);
   if (type === types.POMODORO) {
-    title.textContent = "Pomodoro (" + time + ")";
+    timer.title.setText('Pomodoro (' + time + ')');
   } else if (type === types.BREAK) {
-    title.textContent = "Break (" + time + ")";
+    timer.title.setText('Break (' + time + ')');
   }
 }
 
 function checkTime(i) {
   if (i < 10) {
-    i = "0" + i;
+    i = '0' + i;
   }
   return i;
 }
 
 function startPomodoro() {
-  var message = "1 Pomodoro is done! Now take a 5-minute short-break!";
+  var
+    message = '1 Pomodoro is done! Now take a 5-minute short-break!';
+
   initPomodoro();
   if (pomodoroCount > 0 && pomodoroCount % 3 === 0) {
-    message = "4 Pomodoro is done! Now take a 15-minute long-break!";
+    message = '4 Pomodoro is done! Now take a 15-minute long-break!';
   }
   interval = setInterval(startTimer, 1000, types.POMODORO, doneNInvokeNextStep, message, startBreak, pomodoroDoneEvent);
 }
@@ -128,28 +151,15 @@ function doneNInvokeNextStep(message, nextStep) {
   nextStep();
 }
 
-function updatePomodoroCount() {
-  ++pomodoroCount;
-  numOfPomodoro.textContent += "X "
-}
-
-function initShortBreak() {
-  initTimer(4, 60);
-}
-
-function initLongBreak() {
-  initTimer(14, 60);
-}
-
 function displayNotification(message) {
-  if (!("Notification" in window)) {
+  if (!('Notification' in window)) {
     alert(message);
     bing();
-  } else if (Notification.permission === "granted") {
+  } else if (Notification.permission === 'granted') {
     new Notification(message);
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission(function (permission) {
-      if (permission === "granted") {
+      if (permission === 'granted') {
         new Notification(message);
       }
     });
@@ -159,9 +169,13 @@ function displayNotification(message) {
   }
 }
 
+function bing() {
+  audio.play();
+}
+
 function startBreak() {
   var
-    message = "Break is done! Now start another Pomodoro";
+    message = 'Break is done! Now start another Pomodoro';
 
   if (pomodoroCount > 0 && pomodoroCount % 4 === 0) {
     initLongBreak();
@@ -169,6 +183,14 @@ function startBreak() {
     initShortBreak();
   }
   interval = setInterval(startTimer, 1000, types.BREAK, doneNInvokeNextStep, message, startPomodoro, breakDoneEvent);
+}
+
+function initLongBreak() {
+  initTimer(14, 60);
+}
+
+function initShortBreak() {
+  initTimer(4, 60);
 }
 
 function pauseTimer() {
@@ -187,17 +209,5 @@ function updatePauseButton(){
     pauseButtonText = timer.isPause ? 'Resume' : 'Pause';
 
   pauseButton.style.display = pauseButtonStyle;
-  changePauseButtonText(pauseButtonText);
-}
-
-function changePauseButtonText(text) {
-  pauseButton.textContent = text;
-}
-
-function changeMainButtonText(text) {
-  mainButton.textContent = text;
-}
-
-function bing() {
-  audio.play();
+  pauseButton.setText(pauseButtonText);
 }
