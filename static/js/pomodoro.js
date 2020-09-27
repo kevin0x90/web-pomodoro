@@ -1,157 +1,179 @@
-var minute = 24;
-var second = 60;
-var interval = undefined;
-var isPause = false;
-var isReset = false;
-var pomodoroCount = 0;
-var breakCount = 0;
-var pomodoroDoneEvent = new Event('pomodoroDone');
-var breakDoneEvent = new Event('breakDone');
+'use strict';
 
-const types = {POMODORO: 'Pomodoro', BREAK: 'break'};
+var
+  minute = 24,
+  second = 60,
+  interval = undefined,
+  pomodoroCount = 0,
+  breakCount = 0,
+  pomodoroDoneEvent = new Event('pomodoroDone'),
+  breakDoneEvent = new Event('breakDone'),
+  types = {
+    POMODORO: 'Pomodoro',
+    BREAK: 'break'
+  },
+  audio = new Audio('/audio/alarm.mp3'),
+  title = document.getElementsByTagName("title")[0],
+  timer = document.getElementById('timer'),
+  numOfPomodoro = document.getElementById('pomodoro-done'),
+  mainButton = document.getElementById('mainButton'),
+  pauseButton = document.getElementById('pauseButton');
 
-var timer = document.getElementById('timer');
-var numOfPomodoro = document.getElementById('pomodoro-done');
-const updatePomodoroCountListener = function (e) {
-    updatePomodoroCount();
+title.setText = function (text) {
+  title.textContent = text;
 };
-const breakDoneListener = function (e) {
+
+timer.title = title;
+timer.isReset = false;
+timer.isPause = false;
+timer.update = function (minute, second, type) {
+  var time = checkTime(minute) + ":" + checkTime(second);
+  this.textContent = time;
+  if (type === types.POMODORO) {
+      timer.title.setText("Pomodoro (" + time + ")");
+  } else if (type === types.BREAK) {
+      timer.title.setText("Break (" + time + ")");
+  }
+};
+
+mainButton.changeText = function (text) {
+  this.textContent = text;
+};
+
+function breakDoneListener (e) {
     breakCount++;
-};
+}
 
-timer.addEventListener('pomodoroDone', updatePomodoroCountListener);
+timer.addEventListener('pomodoroDone', updatePomodoroCount);
 timer.addEventListener('breakDone', breakDoneListener);
 
 function startTheDay() {
-    if (isReset) {
-        clearInterval(interval);
-        updateTimer(25, 0, types.POMODORO);
-        changeMainButtonText("Start your Pomorodo!");
-        isReset = false;
-        //When the user resets we pause the timer
-        isPause = true;
+    if (timer.isReset) {
+      clearInterval(interval);
+      updateTimer(25, 0, types.POMODORO);
+      mainButton.changeText("Start your Pomorodo!");
+      timer.isReset = false;
+      //When the user resets we pause the timer
+      timer.isPause = true;
     } else {
-        changeMainButtonText("Reset");
-        isReset = true;
-        startPomodoro();
-        isPause = false;
+      mainButton.changeText("Reset");
+      timer.isReset = true;
+      startPomodoro();
+      timer.isPause = false;
     }
     updatePauseButton();
-
-}
-
-function updatePomodoroCount() {
-    pomodoroCount++;
-    numOfPomodoro.innerHTML += "X "
-}
-
-function initTimer(min, sec) {
-    minute = min;
-    second = sec;
-}
-
-function initPomodoro() {
-    initTimer(24, 60);
-    // initTimer(0, 5);
-}
-
-function initShortBreak() {
-    initTimer(4, 60);
-    // initTimer(0, 3);
-}
-
-function initLongBreak() {
-    initTimer(14, 60);
-    // initTimer(0, 7);
-}
-
-function startPomodoro() {
-    initPomodoro();
-    var message = "1 Pomodoro is done! Now take a 5-minute short-break!";
-    if (pomodoroCount > 0 && pomodoroCount % 3 === 0) {
-        message = "4 Pomodoro is done! Now take a 15-minute long-break!";
-    }
-    interval = setInterval(startTimer, 1000, types.POMODORO, doneNInvokeNextStep, message, startBreak, pomodoroDoneEvent);
-}
-
-function startTimer(type, doneNInvokeNextStep, message, nextStep, event) {
-    if (isPause) {
-        return;
-    }
-    second--;
-    updateTimer(minute, second, type);
-
-    if (second === 0) {
-        if (minute === 0) {
-            if (event) {
-                timer.dispatchEvent(event);
-            }
-            doneNInvokeNextStep(message, nextStep);
-            return;
-        } else {
-            minute--;
-        }
-        second = 59;
-    }
 }
 
 function updateTimer(minute, second, type) {
-    var time = checkTime(minute) + ":"
-        + checkTime(second);
-    var title = document.getElementsByTagName("title")[0];
-    timer.innerHTML = time;
-    if (type === types.POMODORO) {
-        title.innerHTML = "Pomodoro (" + time + ")";
-    } else if (type === types.BREAK) {
-        title.innerHTML = "Break (" + time + ")";
-    }
-
+  var time = checkTime(minute) + ":" + checkTime(second);
+  timer.textContent = time;
+  if (type === types.POMODORO) {
+    title.textContent = "Pomodoro (" + time + ")";
+  } else if (type === types.BREAK) {
+    title.textContent = "Break (" + time + ")";
+  }
 }
 
 function checkTime(i) {
-    if (i < 10) {
-        i = "0" + i;
+  if (i < 10) {
+    i = "0" + i;
+  }
+  return i;
+}
+
+function startPomodoro() {
+  var message = "1 Pomodoro is done! Now take a 5-minute short-break!";
+  initPomodoro();
+  if (pomodoroCount > 0 && pomodoroCount % 3 === 0) {
+    message = "4 Pomodoro is done! Now take a 15-minute long-break!";
+  }
+  interval = setInterval(startTimer, 1000, types.POMODORO, doneNInvokeNextStep, message, startBreak, pomodoroDoneEvent);
+}
+
+function initPomodoro() {
+  initTimer(24, 60);
+}
+
+function initTimer(min, sec) {
+  minute = min;
+  second = sec;
+}
+
+function startTimer(type, doneNInvokeNextStep, message, nextStep, event) {
+  if (timer.isPause) {
+    return;
+  }
+  --second;
+  updateTimer(minute, second, type);
+
+  if (second !== 0) {
+    return;
+  }
+
+  second = 59;
+  if (minute === 0) {
+    if (event) {
+      timer.dispatchEvent(event);
     }
-    return i;
+    doneNInvokeNextStep(message, nextStep);
+    return;
+  }
+
+  --minute;
 }
 
 function doneNInvokeNextStep(message, nextStep) {
-    displayNotification(message);
-    clearInterval(interval);
-    nextStep();
+  displayNotification(message);
+  clearInterval(interval);
+  nextStep();
+}
+
+function updatePomodoroCount() {
+  ++pomodoroCount;
+  numOfPomodoro.textContent += "X "
+}
+
+function initShortBreak() {
+  initTimer(4, 60);
+}
+
+function initLongBreak() {
+  initTimer(14, 60);
 }
 
 function displayNotification(message) {
-    if (!("Notification" in window)) {
-        alert(message);
-        bing();
-    } else if (Notification.permission === "granted") {
-        var notification = new Notification(message);
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission(function (permission) {
-            if (permission === "granted") {
-                var notification = new Notification(message);
-            }
-        });
-    } else {
-        alert(message);
-        bing();
-    }
+  if (!("Notification" in window)) {
+    alert(message);
+    bing();
+  } else if (Notification.permission === "granted") {
+    new Notification(message);
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission(function (permission) {
+      if (permission === "granted") {
+        new Notification(message);
+      }
+    });
+  } else {
+    alert(message);
+    bing();
+  }
 }
 
 function startBreak() {
-    if (pomodoroCount > 0 && pomodoroCount % 4 === 0) {
-        initLongBreak();
-    } else {
-        initShortBreak();
-    }
-    var message = "Break is done! Now start another Pomodoro";
-    interval = setInterval(startTimer, 1000, types.BREAK, doneNInvokeNextStep, message, startPomodoro, breakDoneEvent);
+  var
+    message = "Break is done! Now start another Pomodoro";
+
+  if (pomodoroCount > 0 && pomodoroCount % 4 === 0) {
+    initLongBreak();
+  } else {
+    initShortBreak();
+  }
+  interval = setInterval(startTimer, 1000, types.BREAK, doneNInvokeNextStep, message, startPomodoro, breakDoneEvent);
 }
 
 function pauseTimer() {
-    isPause = !isPause;
-    updatePauseButton();
+  timer.isPause = !timer.isPause;
+  updatePauseButton();
 }
 
 function updatePauseButton(){
@@ -160,28 +182,22 @@ function updatePauseButton(){
     if isReset is true Then that mean POMODORO is active so we show the pauseButton
     else POMODORO is not active so we don't need the pauseButton so we hide it
    */
-  if (isReset) {
-    document.getElementById("pauseButton").style.display = "inline";
-  } else {
-    document.getElementById("pauseButton").style.display = "none";
-  }
+  var
+    pauseButtonStyle = timer.isReset ? 'inline' : 'none',
+    pauseButtonText = timer.isPause ? 'Resume' : 'Pause';
 
-  if(isPause){
-    changePauseButtonText('Resume');
-  }else{
-    changePauseButtonText('Pause');
-  }
+  pauseButton.style.display = pauseButtonStyle;
+  changePauseButtonText(pauseButtonText);
 }
 
 function changePauseButtonText(text) {
-    document.getElementById('pauseButton').innerHTML = text;
+  pauseButton.textContent = text;
 }
-      
+
 function changeMainButtonText(text) {
-  document.getElementById('mainButton').innerHTML = text;
+  mainButton.textContent = text;
 }
 
 function bing() {
-    var audio = new Audio('/audio/alarm.mp3');
-    audio.play();
+  audio.play();
 }
