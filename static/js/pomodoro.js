@@ -17,49 +17,26 @@ var
   timer = document.getElementById('timer'),
   numOfPomodoro = document.getElementById('pomodoro-done'),
   mainButton = document.getElementById('mainButton'),
-  pauseButton = document.getElementById('pauseButton');
+  pauseButton = document.getElementById('pauseButton'),
+  updateQueue = [];
 
-title.setText = function (text) {
-  title.textContent = text;
-};
-
-numOfPomodoro.setText = function (text) {
-  this.textContent = text;
-};
-numOfPomodoro.getText = function () {
-  return this.textContent;
-};
-
-timer.title = title;
-timer.isReset = false;
-timer.isPause = false;
-timer.setText = function (text) {
-  this.textContent = text;
-};
-timer.update = function (minute, second, type) {
-  var time = checkTime(minute) + ":" + checkTime(second);
-  this.textContent = time;
-  if (type === types.POMODORO) {
-      timer.title.setText("Pomodoro (" + time + ")");
-  } else if (type === types.BREAK) {
-      timer.title.setText("Break (" + time + ")");
+function updateUi() {
+  while (updateQueue.length > 0) {
+    updateQueue.pop()();
   }
-};
 
-mainButton.setText = function (text) {
-  this.textContent = text;
-};
+  requestAnimationFrame(updateUi);
+}
 
-pauseButton.setText = function (text) {
-  this.textContent = text;
-};
-
-timer.addEventListener('pomodoroDone', updatePomodoroCount);
-timer.addEventListener('breakDone', breakDoneListener);
+function setDomElementText(element, text) {
+  updateQueue.push(function () {
+    element.textContent = text;
+  });
+}
 
 function updatePomodoroCount() {
   ++pomodoroCount;
-  numOfPomodoro.setText(numOfPomodoro.getText() + "X ")
+  setDomElementText(numOfPomodoro, numOfPomodoro.textContent + "X ")
 }
 
 function breakDoneListener (e) {
@@ -70,12 +47,12 @@ function startTheDay() {
   if (timer.isReset) {
     clearInterval(interval);
     updateTimer(25, 0, types.POMODORO);
-    mainButton.setText("Start your Pomorodo!");
+    setDomElementText(mainButton, "Start your Pomorodo!");
     timer.isReset = false;
     //When the user resets we pause the timer
     timer.isPause = true;
   } else {
-    mainButton.setText("Reset");
+    setDomElementText(mainButton, "Reset");
     timer.isReset = true;
     startPomodoro();
     timer.isPause = false;
@@ -87,11 +64,11 @@ function updateTimer(minute, second, type) {
   var
     time = checkTime(minute) + ":" + checkTime(second);
 
-  timer.setText(time);
+  setDomElementText(timer, time);
   if (type === types.POMODORO) {
-    timer.title.setText('Pomodoro (' + time + ')');
+    setDomElementText(title, 'Pomodoro (' + time + ')');
   } else if (type === types.BREAK) {
-    timer.title.setText('Break (' + time + ')');
+    setDomElementText(title, 'Break (' + time + ')');
   }
 }
 
@@ -209,5 +186,24 @@ function updatePauseButton(){
     pauseButtonText = timer.isPause ? 'Resume' : 'Pause';
 
   pauseButton.style.display = pauseButtonStyle;
-  pauseButton.setText(pauseButtonText);
+  setDomElementText(pauseButton, pauseButtonText);
 }
+
+(function () {
+  timer.isReset = false;
+  timer.isPause = false;
+  timer.update = function (minute, second, type) {
+    var time = checkTime(minute) + ":" + checkTime(second);
+    setDomElementText(timer, time);
+    if (type === types.POMODORO) {
+        setDomElementText(title, "Pomodoro (" + time + ")");
+    } else if (type === types.BREAK) {
+        setDomElementText(title, "Break (" + time + ")");
+    }
+  };
+
+  timer.addEventListener('pomodoroDone', updatePomodoroCount);
+  timer.addEventListener('breakDone', breakDoneListener);
+
+  requestAnimationFrame(updateUi);
+})();
